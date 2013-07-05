@@ -16,6 +16,9 @@ struct cdev *kernel_cdev = NULL;
 //device number
 dev_t devno = 0;
 
+//information for udev
+struct class *cl = NULL;	//create sysfs entry; will be filled in init function
+
 /**************** driver init function ****************/
 static int __init char_init()
 {
@@ -51,6 +54,8 @@ static int __init char_init()
 		return ret;
 	}
 
+	cl = class_create(THIS_MODULE, name);		//create sysfs entry
+
 	printk(KERN_INFO "%s: init: function done.\n", name);
 
 	return 0;
@@ -60,6 +65,9 @@ static int __init char_init()
 static void __exit char_exit()
 {
 	printk(KERN_INFO "%s: exit: function start\n", name);
+
+	printk(KERN_INFO "%s: exit: removing the /sys entry...\n", name);
+	class_destroy(cl);
 
 	printk(KERN_INFO "%s: exit: deleting the device structure from kernel...\n", name);
 	cdev_del(kernel_cdev);
