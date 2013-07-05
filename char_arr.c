@@ -3,6 +3,16 @@
 //device name
 char name[] = "char_arr";
 
+//contains the functionalities provided by our driver
+//register the file operations by the driver with the VFS
+static struct file_operations fops = {
+	.owner	= THIS_MODULE,
+};
+
+//structure to represent our char device within kernel
+//(will be filled later in the init function at runtime)
+struct cdev *kernel_cdev = NULL;
+
 //device number
 dev_t devno = 0;
 
@@ -28,6 +38,19 @@ static int __init char_init()
 	major = MAJOR(devno);
 	printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, major);
 
+	//fill our cdev structure
+	kernel_cdev		= cdev_alloc();
+	kernel_cdev->ops	= &fops;
+	kernel_cdev->owner	= THIS_MODULE;
+
+	//now that we have an allocated cdev structure and a valid device number
+	//we can tell kernel about our initialized cdev structure and device number
+	ret = cdev_add(kernel_cdev, devno, 1);
+	if(ret < 0){
+		printk(KERN_INFO "%s: init: unable to add cdev to kernel.\n", name);
+		return ret;
+	}
+
 	printk(KERN_INFO "%s: init: function done.\n", name);
 
 	return 0;
@@ -37,6 +60,9 @@ static int __init char_init()
 static void __exit char_exit()
 {
 	printk(KERN_INFO "%s: exit: function start\n", name);
+
+	printk(KERN_INFO "%s: exit: deleting the device structure from kernel...\n", name);
+	cdev_del(kernel_cdev);
 
 	printk(KERN_INFO "%s: exit: unregistering the device...\n", name);
 	unregister_chrdev_region(devno, 1);

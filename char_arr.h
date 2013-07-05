@@ -2,6 +2,9 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
+//we want to write a characteer driver
+#include <linux/cdev.h>
+
 //we need struct file_operations for our driver
 #include <linux/fs.h>
 
