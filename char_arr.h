@@ -14,3 +14,12 @@
 //function prototypes
 static int	__init	char_init( void );	//init function
 static void	__exit	char_exit( void );	//exit function
+
+int	char_open(	struct inode *inode,
+			struct file *filp );
+
+//data structure which represents our device
+struct char_device{
+        char array[100];
+        struct semaphore sem;
+};

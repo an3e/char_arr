@@ -7,11 +7,15 @@ char name[] = "char_arr";
 //register the file operations by the driver with the VFS
 static struct file_operations fops = {
 	.owner	= THIS_MODULE,
+	.open	= char_open,
 };
 
 //structure to represent our char device within kernel
 //(will be filled later in the init function at runtime)
 struct cdev *kernel_cdev = NULL;
+
+//structure to represent our device data structure
+struct char_device char_arr;
 
 //device number
 dev_t devno = 0;
@@ -42,10 +46,10 @@ static int __init char_init()
 	major = MAJOR(devno);
 	printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, major);
 
-	printk(KERN_INFO "%s: init: creating /sys entry.\n", name, major);
+	printk(KERN_INFO "%s: init: creating /sys entry.\n", name);
 	cl = class_create(THIS_MODULE, name);		//create sysfs entry
 
-	printk(KERN_INFO "%s: init: creating /dev entry.\n", name, major);
+	printk(KERN_INFO "%s: init: creating /dev entry.\n", name);
 	device_create(cl, NULL, devno, NULL, name);	//create a device file under /dev
 
 	//fill our cdev structure
@@ -61,6 +65,9 @@ static int __init char_init()
 		printk(KERN_INFO "%s: init: unable to add cdev to kernel.\n", name);
 		return ret;
 	}
+
+	//initialize the device semaphore as unlocked
+	sema_init(&char_arr.sem, 1);
 
 	printk(KERN_INFO "%s: init: function done.\n", name);
 
@@ -85,6 +92,19 @@ static void __exit char_exit()
 	unregister_chrdev_region(devno, 1);
 
 	printk(KERN_INFO "%s: exit: function done.\n", name);
+}
+
+/**************** driver open function ****************/
+int char_open(struct inode *inode, struct file *filp)
+{
+	printk(KERN_INFO "%s: opening the device...\n", name);
+	//check if this is the only process working on the device data
+	if(down_interruptible(&char_arr.sem)){
+		printk(KERN_INFO "%s: could not hold semaphore.", name);
+		return -1;
+	}
+
+	return 0;
 }
 
 /**************** register init & exit functions ****************/
