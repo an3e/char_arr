@@ -18,6 +18,7 @@ dev_t devno = 0;
 
 //information for udev
 struct class *cl = NULL;	//create sysfs entry; will be filled in init function
+struct device *pdev= NULL;
 
 /**************** driver init function ****************/
 static int __init char_init()
@@ -41,6 +42,12 @@ static int __init char_init()
 	major = MAJOR(devno);
 	printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, major);
 
+	printk(KERN_INFO "%s: init: creating /sys entry.\n", name, major);
+	cl = class_create(THIS_MODULE, name);		//create sysfs entry
+
+	printk(KERN_INFO "%s: init: creating /dev entry.\n", name, major);
+	device_create(cl, NULL, devno, NULL, name);	//create a device file under /dev
+
 	//fill our cdev structure
 	kernel_cdev		= cdev_alloc();
 	kernel_cdev->ops	= &fops;
@@ -48,13 +55,12 @@ static int __init char_init()
 
 	//now that we have an allocated cdev structure and a valid device number
 	//we can tell kernel about our initialized cdev structure and device number
+	printk(KERN_INFO "%s: init: registering cdev structure.\n", name);
 	ret = cdev_add(kernel_cdev, devno, 1);
 	if(ret < 0){
 		printk(KERN_INFO "%s: init: unable to add cdev to kernel.\n", name);
 		return ret;
 	}
-
-	cl = class_create(THIS_MODULE, name);		//create sysfs entry
 
 	printk(KERN_INFO "%s: init: function done.\n", name);
 
@@ -65,6 +71,9 @@ static int __init char_init()
 static void __exit char_exit()
 {
 	printk(KERN_INFO "%s: exit: function start\n", name);
+
+	printk(KERN_INFO "%s: exit: removing the /dev entry...\n", name);
+	device_destroy(cl, devno);
 
 	printk(KERN_INFO "%s: exit: removing the /sys entry...\n", name);
 	class_destroy(cl);
