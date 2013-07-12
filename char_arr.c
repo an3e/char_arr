@@ -107,6 +107,22 @@ int char_open(struct inode *inode, struct file *filp)
 	return 0;
 }
 
+/**************** driver read function ****************/
+ssize_t char_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	unsigned long not_copied = 0;
+
+	printk(KERN_INFO "%s: reading from device...\n", name);
+
+	if(count > sizeof(char_arr.array)){
+		printk(KERN_INFO "%s: triminig in read function\n", name);
+		count = sizeof(char_arr.array);
+	}
+	not_copied = copy_to_user(buf, char_arr.array, count);
+
+	return not_copied;
+}
+
 /**************** register init & exit functions ****************/
 module_init(char_init);
 module_exit(char_exit);
