@@ -2,6 +2,7 @@
 
 //device name
 char name[] = "char_arr";
+char proc_entry_name[] = "char_arr";
 
 //contains the functionalities provided by our driver
 //register the file operations by the driver with the VFS
@@ -10,6 +11,7 @@ static struct file_operations fops = {
 	.open	= char_open,
 	.read	= char_read,
 	.write	= char_write,
+	.release= char_release,
 };
 
 //structure to represent our char device within kernel
@@ -67,6 +69,10 @@ static int __init char_init()
 		printk(KERN_INFO "%s: init: unable to add cdev to kernel.\n", name);
 		return ret;
 	}
+
+	//create an entry in /proc fs
+	create_proc_read_entry(proc_entry_name, 0, NULL, char_read_proc, NULL);
+
 
 	//initialize the device semaphore as unlocked
 	sema_init(&char_arr.sem, 1);
@@ -150,6 +156,13 @@ ssize_t char_write(struct file *filp, const char __user *buf, size_t count, loff
 	return not_copied;
 }
 
+/**************** driver read proc fs entry ****************/
+int char_read_proc(char *buf,char **start,off_t offset,int count,int *eof,void *data ) 
+{
+	int len = sprintf(buf, "Hello world\n");
+
+	return len;
+}
 
 /**************** register init & exit functions ****************/
 module_init(char_init);

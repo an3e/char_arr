@@ -11,6 +11,9 @@
 //we need struct file_operations for our driver
 #include <linux/fs.h>
 
+//we want to create an entry in the /proc fs
+#include <linux/proc_fs.h>
+
 //we want to create an entry in the /dev and /sys fs
 #include <linux/device.h>
 
@@ -33,6 +36,13 @@ ssize_t	char_write(	struct file *filp,	//a pointer to the file to write to
 
 int	char_release(	struct inode *inode,
 			struct file *filp );
+
+int	char_read_proc( char *buf,
+			char **start,
+			off_t offset,
+			int count,
+			int *eof,
+			void *data );
 
 //data structure which represents our device
 struct char_device{
