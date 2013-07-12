@@ -125,6 +125,15 @@ ssize_t char_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
 	return not_copied;
 }
 
+/**************** driver relese function ****************/
+int char_release(struct inode *inode, struct file *filp)
+{
+	printk(KERN_INFO "%s: releasing semaphore\n", name);
+	//release the semaphore
+	up(&char_arr.sem);
+	return 0;
+}
+
 /**************** driver write function ****************/
 ssize_t char_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
