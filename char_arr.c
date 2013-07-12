@@ -8,6 +8,8 @@ char name[] = "char_arr";
 static struct file_operations fops = {
 	.owner	= THIS_MODULE,
 	.open	= char_open,
+	.read	= char_read,
+	.write	= char_write,
 };
 
 //structure to represent our char device within kernel
@@ -122,6 +124,23 @@ ssize_t char_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
 
 	return not_copied;
 }
+
+/**************** driver write function ****************/
+ssize_t char_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
+{
+	unsigned long not_copied = 0;
+
+	printk(KERN_INFO "%s: writing to device ...\n", name);
+
+	if(count>sizeof(char_arr.array)){
+		printk(KERN_INFO "%s: triming in write function\n", name);
+		count = sizeof(char_arr.array);
+	}
+	not_copied = copy_from_user(char_arr.array, buf, count);
+
+	return not_copied;
+}
+
 
 /**************** register init & exit functions ****************/
 module_init(char_init);

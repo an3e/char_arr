@@ -26,6 +26,12 @@ ssize_t	char_read(	struct file *filp,	//a pointer to the file to read from
 			size_t count,		//number of bytes to copy into destination buffer
 			loff_t *f_pos );	//pointer to the current position in the file
 
+ssize_t	char_write(	struct file *filp,	//a pointer to the file to write to
+			const char __user *buf,	//source buffer
+			size_t count,		//nmbr of bytes to copy to the dest. buffer
+			loff_t *f_pos );	//pointer to the current position in the file
+
+
 //data structure which represents our device
 struct char_device{
         char array[100];
