@@ -79,14 +79,14 @@ static void __exit char_exit()
 {
 	printk(KERN_INFO "%s: exit: function start\n", name);
 
+	printk(KERN_INFO "%s: exit: deleting the cdev structure from kernel...\n", name);
+	cdev_del(kernel_cdev);
+
 	printk(KERN_INFO "%s: exit: removing the /dev entry...\n", name);
 	device_destroy(cl, devno);
 
 	printk(KERN_INFO "%s: exit: removing the /sys entry...\n", name);
 	class_destroy(cl);
-
-	printk(KERN_INFO "%s: exit: deleting the device structure from kernel...\n", name);
-	cdev_del(kernel_cdev);
 
 	printk(KERN_INFO "%s: exit: unregistering the device...\n", name);
 	unregister_chrdev_region(devno, 1);
