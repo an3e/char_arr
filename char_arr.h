@@ -2,6 +2,8 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
+#include <linux/version.h>
+
 //we will use copy_to_user() and copy_from_user()
 #include <asm/uaccess.h>
 

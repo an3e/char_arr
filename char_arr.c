@@ -41,7 +41,7 @@ static int __init char_init()
 					1,	//number of minor numbers required
 					name);	//the name of associated device or driver
 						//(same name will appear in /proc/devices)
-	if(ret < 0){
+	if( ret < 0 ){
 		printk(KERN_INFO "%s: init: major number allocation failed.\n", name);
 		return ret;
 	}
@@ -52,9 +52,18 @@ static int __init char_init()
 
 	printk(KERN_INFO "%s: init: creating /sys entry.\n", name);
 	cl = class_create(THIS_MODULE, name);		//create sysfs entry
+	if(cl == NULL){
+		unregister_chrdev_region(devno,1);
+		return -1;
+	}
 
 	printk(KERN_INFO "%s: init: creating /dev entry.\n", name);
-	device_create(cl, NULL, devno, NULL, name);	//create a device file under /dev
+	pdev = device_create(cl, NULL, devno, NULL, name);	//create a device file under /dev
+	if(pdev == NULL){
+		class_destroy(cl);
+		unregister_chrdev_region(devno,1);
+		return -1;
+	}
 
 	//fill our cdev structure
 	kernel_cdev		= cdev_alloc();
@@ -65,14 +74,18 @@ static int __init char_init()
 	//we can tell kernel about our initialized cdev structure and device number
 	printk(KERN_INFO "%s: init: registering cdev structure.\n", name);
 	ret = cdev_add(kernel_cdev, devno, 1);
-	if(ret < 0){
+	if( ret < 0 ){
 		printk(KERN_INFO "%s: init: unable to add cdev to kernel.\n", name);
+		device_destroy(cl, devno);
+		class_destroy(cl);
+		unregister_chrdev_region(devno,1);
 		return ret;
 	}
 
 	//create an entry in /proc fs
-	create_proc_read_entry(proc_entry_name, 0, NULL, char_read_proc, NULL);
-
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,1)
+		create_proc_read_entry(proc_entry_name, 0, NULL, char_read_proc, NULL);
+	#endif
 
 	//initialize the device semaphore as unlocked
 	sema_init(&char_arr.sem, 1);
@@ -103,9 +116,11 @@ static void __exit char_exit()
 }
 
 /**************** driver open function ****************/
-int char_open(struct inode *inode, struct file *filp)
+int char_open(	struct inode *inode,
+		struct file *filp )
 {
 	printk(KERN_INFO "%s: opening the device...\n", name);
+
 	//check if this is the only process working on the device data
 	if(down_interruptible(&char_arr.sem)){
 		printk(KERN_INFO "%s: could not hold semaphore.", name);
@@ -116,7 +131,10 @@ int char_open(struct inode *inode, struct file *filp)
 }
 
 /**************** driver read function ****************/
-ssize_t char_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+ssize_t char_read(	struct file *filp,
+			char __user *buf,
+			size_t count,
+			loff_t *f_pos )
 {
 	unsigned long not_copied = 0;
 
@@ -132,22 +150,28 @@ ssize_t char_read(struct file *filp, char __user *buf, size_t count, loff_t *f_p
 }
 
 /**************** driver relese function ****************/
-int char_release(struct inode *inode, struct file *filp)
+int char_release(	struct inode *inode,
+			struct file *filp)
 {
 	printk(KERN_INFO "%s: releasing semaphore\n", name);
+
 	//release the semaphore
 	up(&char_arr.sem);
+
 	return 0;
 }
 
 /**************** driver write function ****************/
-ssize_t char_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
+ssize_t char_write(	struct file *filp,
+			const char __user *buf,
+			size_t count,
+			loff_t *f_pos )
 {
 	unsigned long not_copied = 0;
 
 	printk(KERN_INFO "%s: writing to device ...\n", name);
 
-	if(count>sizeof(char_arr.array)){
+	if(count > sizeof(char_arr.array)){
 		printk(KERN_INFO "%s: triming in write function\n", name);
 		count = sizeof(char_arr.array);
 	}
@@ -157,7 +181,12 @@ ssize_t char_write(struct file *filp, const char __user *buf, size_t count, loff
 }
 
 /**************** driver read proc fs entry ****************/
-int char_read_proc(char *buf,char **start,off_t offset,int count,int *eof,void *data ) 
+int char_read_proc(	char *buf,
+			char **start,
+			off_t offset,
+			int count,
+			int *eof,
+			void *data ) 
 {
 	int len = sprintf(buf, "Hello world\n");
 
