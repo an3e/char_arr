@@ -31,12 +31,12 @@ struct device *pdev= NULL;
 /**************** driver init function ****************/
 static int __init char_init()
 {
-	int ret = -1, major = 0;
+	int ret = -1;
 
 	printk(KERN_INFO "%s: init: function start\n", name);
 
 	//try to allocate device number for our driver
-	ret = alloc_chrdev_region( &devno,	//output parameter for first assigned number
+	ret = alloc_chrdev_region( 	&devno,	//output parameter for first assigned number
 					0,	//first of the requested range of minor numbers
 					1,	//number of minor numbers required
 					name);	//the name of associated device or driver
@@ -46,9 +46,7 @@ static int __init char_init()
 		return ret;
 	}
 
-	//print the major number after successfull device number allocation
-	major = MAJOR(devno);
-	printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, major);
+	printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, MAJOR(devno));
 
 	printk(KERN_INFO "%s: init: creating /sys entry.\n", name);
 	cl = class_create(THIS_MODULE, name);		//create sysfs entry
@@ -177,7 +175,7 @@ ssize_t char_write(	struct file *filp,
 	}
 	not_copied = copy_from_user(char_arr.array, buf, count);
 
-	return not_copied;
+	return count - not_copied;	//return the number of written bytes
 }
 
 /**************** driver read proc fs entry ****************/
