@@ -167,7 +167,7 @@ ssize_t char_read(	struct file *filp,
 	}
 	not_copied = copy_to_user(buf, char_arr.array, count);
 
-	return not_copied;
+	return count - not_copied;
 }
 
 /**************** driver write function ****************/
