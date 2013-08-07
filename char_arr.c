@@ -11,7 +11,7 @@ static struct file_operations fops = {
 	.open	= char_open,
 	.read	= char_read,
 	.write	= char_write,
-	.release= char_release,
+	.release= char_close,
 };
 
 //structure to represent our char device within kernel
@@ -122,6 +122,18 @@ static void __exit char_exit()
 	printk(KERN_INFO "%s: exit:\tfunction done.\n", name);
 }
 
+/**************** driver relese function ****************/
+int char_close(	struct inode *inode,
+		struct file *filp)
+{
+	printk(KERN_INFO "%s: close:\treleasing semaphore...\n", name);
+
+	//release the semaphore
+	up(&char_arr.sem);
+
+	return 0;
+}
+
 /**************** driver open function ****************/
 int char_open(	struct inode *inode,
 		struct file *filp )
@@ -156,18 +168,6 @@ ssize_t char_read(	struct file *filp,
 	not_copied = copy_to_user(buf, char_arr.array, count);
 
 	return not_copied;
-}
-
-/**************** driver relese function ****************/
-int char_release(	struct inode *inode,
-			struct file *filp)
-{
-	printk(KERN_INFO "%s: release:\treleasing semaphore...\n", name);
-
-	//release the semaphore
-	up(&char_arr.sem);
-
-	return 0;
 }
 
 /**************** driver write function ****************/

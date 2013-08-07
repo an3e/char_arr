@@ -36,7 +36,7 @@ ssize_t	char_write(	struct file *filp,	//a pointer to the file to write to
 			size_t count,		//nmbr of bytes to copy to the dest. buffer
 			loff_t *f_pos );	//pointer to the current position in the file
 
-int	char_release(	struct inode *inode,
+int	char_close(	struct inode *inode,
 			struct file *filp );
 
 int	char_read_proc( char *buf,
