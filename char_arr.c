@@ -149,6 +149,8 @@ ssize_t char_read(	struct file *filp,
 
 	if(count > sizeof(char_arr.array)){
 		printk(KERN_INFO "%s: read:\ttriminig in read function...\n", name);
+		printk(KERN_INFO "%s: read:\tuser wants to read %i bytes.", name, count);
+		printk(KERN_INFO "%s: read:\tdevice buffer has size of %i bytes.", name, sizeof(char_arr.array));
 		count = sizeof(char_arr.array);
 	}
 	not_copied = copy_to_user(buf, char_arr.array, count);
@@ -180,6 +182,8 @@ ssize_t char_write(	struct file *filp,
 
 	if(count > sizeof(char_arr.array)){
 		printk(KERN_INFO "%s: write:\ttriming in write function...\n", name);
+		printk(KERN_INFO "%s: write:\tuser wants to write %i bytes.", name, count);
+		printk(KERN_INFO "%s: write:\tdevice buffer has size of %i bytes.", name, sizeof(char_arr.array));
 		count = sizeof(char_arr.array);
 	}
 	not_copied = copy_from_user(char_arr.array, buf, count);
