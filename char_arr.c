@@ -90,6 +90,7 @@ static int __init char_init()
 
 	return 0;
 
+	//do clean up work in case of failure
 failed_device_create:
 	class_destroy(cl);
 failed_class_create:
@@ -113,7 +114,7 @@ static void __exit char_exit()
 	class_destroy(cl);
 
 	printk(KERN_INFO "%s: exit: deleting the cdev structure from kernel...\n", name);
-	cdev_del(kernel_cdev);
+	cdev_del(kernel_cdev);	//contains kobject_put() & more
 
 	printk(KERN_INFO "%s: exit: unregistering the device number...\n", name);
 	unregister_chrdev_region(devno, 1);
