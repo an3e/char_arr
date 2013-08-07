@@ -36,48 +36,46 @@ static int __init char_init()
 	printk(KERN_INFO "%s: init: function start\n", name);
 
 	//try to allocate device number for our driver
+	printk(KERN_INFO "%s: init: allocating device number...\n", name);
 	ret = alloc_chrdev_region( 	&devno,	//output parameter for first assigned number
 					0,	//first of the requested range of minor numbers
 					1,	//number of minor numbers required
 					name);	//the name of associated device or driver
 						//(same name will appear in /proc/devices)
 	if( ret < 0 ){
-		printk(KERN_INFO "%s: init: major number allocation failed.\n", name);
-		return ret;
+		goto failed_alloc_chrdev_region;
+	} else {
+		printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, MAJOR(devno));
 	}
 
-	printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, MAJOR(devno));
-
-	//fill our cdev structure
+	printk(KERN_INFO "%s: init: allocating struct cdev...\n", name);
 	kernel_cdev		= cdev_alloc();
+	if (kernel_cdev == NULL){
+		goto failed_cdev_alloc;
+	}
+	//initialize our driver object
 	kernel_cdev->ops	= &fops;
 	kernel_cdev->owner	= THIS_MODULE;
 
-	//now that we have an allocated cdev structure and a valid device number
-	//we can tell kernel about our initialized cdev structure and device number
-	printk(KERN_INFO "%s: init: registering cdev structure.\n", name);
+	//now that we have an allocated & initialized cdev structure
+	//and a valid device number we can tell kernel about
+	//our initialized cdev structure and device number
+	printk(KERN_INFO "%s: init: registering cdev structure....\n", name);
 	ret = cdev_add(kernel_cdev, devno, 1);
 	if( ret < 0 ){
-		printk(KERN_INFO "%s: init: unable to add cdev to kernel.\n", name);
-		device_destroy(cl, devno);
-		class_destroy(cl);
-		unregister_chrdev_region(devno,1);
-		return ret;
+		goto failed_cdev_add;
 	}
 
-	printk(KERN_INFO "%s: init: creating /sys entry.\n", name);
+	printk(KERN_INFO "%s: init: creating /sys entry....\n", name);
 	cl = class_create(THIS_MODULE, name);		//create sysfs entry
 	if(cl == NULL){
-		unregister_chrdev_region(devno,1);
-		return -1;
+		goto failed_class_create;
 	}
 
-	printk(KERN_INFO "%s: init: creating /dev entry.\n", name);
+	printk(KERN_INFO "%s: init: creating /dev entry....\n", name);
 	pdev = device_create(cl, NULL, devno, NULL, name);	//create a device file under /dev
 	if(pdev == NULL){
-		class_destroy(cl);
-		unregister_chrdev_region(devno,1);
-		return -1;
+		goto failed_device_create;
 	}
 
 	//create an entry in /proc fs
@@ -91,6 +89,16 @@ static int __init char_init()
 	printk(KERN_INFO "%s: init: function done.\n", name);
 
 	return 0;
+
+failed_device_create:
+	class_destroy(cl);
+failed_class_create:
+failed_cdev_add:
+	kobject_put(&kernel_cdev->kobj);
+failed_cdev_alloc:
+	unregister_chrdev_region(devno, 1);
+failed_alloc_chrdev_region:
+	return -EIO;
 }
 
 /**************** driver exit function ****************/
@@ -107,7 +115,7 @@ static void __exit char_exit()
 	printk(KERN_INFO "%s: exit: deleting the cdev structure from kernel...\n", name);
 	cdev_del(kernel_cdev);
 
-	printk(KERN_INFO "%s: exit: unregistering the device...\n", name);
+	printk(KERN_INFO "%s: exit: unregistering the device number...\n", name);
 	unregister_chrdev_region(devno, 1);
 
 	printk(KERN_INFO "%s: exit: function done.\n", name);
