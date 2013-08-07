@@ -33,10 +33,10 @@ static int __init char_init()
 {
 	int ret = -1;
 
-	printk(KERN_INFO "%s: init: function start\n", name);
+	printk(KERN_INFO "%s: init:\tfunction start\n", name);
 
 	//try to allocate device number for our driver
-	printk(KERN_INFO "%s: init: allocating device number...\n", name);
+	printk(KERN_INFO "%s: init:\tallocating device number...\n", name);
 	ret = alloc_chrdev_region( 	&devno,	//output parameter for first assigned number
 					0,	//first of the requested range of minor numbers
 					1,	//number of minor numbers required
@@ -45,10 +45,10 @@ static int __init char_init()
 	if( ret < 0 ){
 		goto failed_alloc_chrdev_region;
 	} else {
-		printk(KERN_INFO "%s: init: allocated major number: %i.\n", name, MAJOR(devno));
+		printk(KERN_INFO "%s: init:\tallocated major number: %i.\n", name, MAJOR(devno));
 	}
 
-	printk(KERN_INFO "%s: init: allocating struct cdev...\n", name);
+	printk(KERN_INFO "%s: init: \tallocating struct cdev...\n", name);
 	kernel_cdev		= cdev_alloc();
 	if (kernel_cdev == NULL){
 		goto failed_cdev_alloc;
@@ -60,19 +60,19 @@ static int __init char_init()
 	//now that we have an allocated & initialized cdev structure
 	//and a valid device number we can tell kernel about
 	//our initialized cdev structure and device number
-	printk(KERN_INFO "%s: init: registering cdev structure....\n", name);
+	printk(KERN_INFO "%s: init:\tregistering cdev structure...\n", name);
 	ret = cdev_add(kernel_cdev, devno, 1);
 	if( ret < 0 ){
 		goto failed_cdev_add;
 	}
 
-	printk(KERN_INFO "%s: init: creating /sys entry....\n", name);
+	printk(KERN_INFO "%s: init:\tcreating /sys entry...\n", name);
 	cl = class_create(THIS_MODULE, name);		//create sysfs entry
 	if(cl == NULL){
 		goto failed_class_create;
 	}
 
-	printk(KERN_INFO "%s: init: creating /dev entry....\n", name);
+	printk(KERN_INFO "%s: init:\tcreating /dev entry...\n", name);
 	pdev = device_create(cl, NULL, devno, NULL, name);	//create a device file under /dev
 	if(pdev == NULL){
 		goto failed_device_create;
@@ -86,7 +86,7 @@ static int __init char_init()
 	//initialize the device semaphore as unlocked
 	sema_init(&char_arr.sem, 1);
 
-	printk(KERN_INFO "%s: init: function done.\n", name);
+	printk(KERN_INFO "%s: init:\tfunction done.\n", name);
 
 	return 0;
 
@@ -105,32 +105,32 @@ failed_alloc_chrdev_region:
 /**************** driver exit function ****************/
 static void __exit char_exit()
 {
-	printk(KERN_INFO "%s: exit: function start\n", name);
+	printk(KERN_INFO "%s: exit:\tfunction start\n", name);
 
-	printk(KERN_INFO "%s: exit: removing the /dev entry...\n", name);
+	printk(KERN_INFO "%s: exit:\tremoving the /dev entry...\n", name);
 	device_destroy(cl, devno);
 
-	printk(KERN_INFO "%s: exit: removing the /sys entry...\n", name);
+	printk(KERN_INFO "%s: exit:\tremoving the /sys entry...\n", name);
 	class_destroy(cl);
 
-	printk(KERN_INFO "%s: exit: deleting the cdev structure from kernel...\n", name);
+	printk(KERN_INFO "%s: exit:\tdeleting the cdev structure from kernel...\n", name);
 	cdev_del(kernel_cdev);	//contains kobject_put() & more
 
-	printk(KERN_INFO "%s: exit: unregistering the device number...\n", name);
+	printk(KERN_INFO "%s: exit:\tunregistering the device number...\n", name);
 	unregister_chrdev_region(devno, 1);
 
-	printk(KERN_INFO "%s: exit: function done.\n", name);
+	printk(KERN_INFO "%s: exit:\tfunction done.\n", name);
 }
 
 /**************** driver open function ****************/
 int char_open(	struct inode *inode,
 		struct file *filp )
 {
-	printk(KERN_INFO "%s: opening the device...\n", name);
+	printk(KERN_INFO "%s: open:\topening the device...\n", name);
 
 	//check if this is the only process working on the device data
 	if(down_interruptible(&char_arr.sem)){
-		printk(KERN_INFO "%s: could not hold semaphore.", name);
+		printk(KERN_INFO "%s: open:\tcould not hold semaphore.", name);
 		return -1;
 	}
 
@@ -145,10 +145,10 @@ ssize_t char_read(	struct file *filp,
 {
 	unsigned long not_copied = 0;
 
-	printk(KERN_INFO "%s: reading from device...\n", name);
+	printk(KERN_INFO "%s: read:\treading from device...\n", name);
 
 	if(count > sizeof(char_arr.array)){
-		printk(KERN_INFO "%s: triminig in read function\n", name);
+		printk(KERN_INFO "%s: read:\ttriminig in read function...\n", name);
 		count = sizeof(char_arr.array);
 	}
 	not_copied = copy_to_user(buf, char_arr.array, count);
@@ -160,7 +160,7 @@ ssize_t char_read(	struct file *filp,
 int char_release(	struct inode *inode,
 			struct file *filp)
 {
-	printk(KERN_INFO "%s: releasing semaphore\n", name);
+	printk(KERN_INFO "%s: release:\treleasing semaphore...\n", name);
 
 	//release the semaphore
 	up(&char_arr.sem);
@@ -176,10 +176,10 @@ ssize_t char_write(	struct file *filp,
 {
 	unsigned long not_copied = 0;
 
-	printk(KERN_INFO "%s: writing to device ...\n", name);
+	printk(KERN_INFO "%s: write:\twriting to device...\n", name);
 
 	if(count > sizeof(char_arr.array)){
-		printk(KERN_INFO "%s: triming in write function\n", name);
+		printk(KERN_INFO "%s: write:\ttriming in write function...\n", name);
 		count = sizeof(char_arr.array);
 	}
 	not_copied = copy_from_user(char_arr.array, buf, count);
