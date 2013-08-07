@@ -61,8 +61,7 @@ static int __init char_init()
 	//and a valid device number we can tell kernel about
 	//our initialized cdev structure and device number
 	printk(KERN_INFO "%s: init:\tregistering cdev structure...\n", name);
-	ret = cdev_add(kernel_cdev, devno, 1);
-	if( ret < 0 ){
+	if(cdev_add(kernel_cdev, devno, 1) != 0){
 		goto failed_cdev_add;
 	}
 
@@ -107,15 +106,15 @@ static void __exit char_exit()
 {
 	printk(KERN_INFO "%s: exit:\tfunction start\n", name);
 
+	//remove entries from filesystem
 	printk(KERN_INFO "%s: exit:\tremoving the /dev entry...\n", name);
 	device_destroy(cl, devno);
-
 	printk(KERN_INFO "%s: exit:\tremoving the /sys entry...\n", name);
 	class_destroy(cl);
 
+	//unregister driver from kernel
 	printk(KERN_INFO "%s: exit:\tdeleting the cdev structure from kernel...\n", name);
 	cdev_del(kernel_cdev);	//contains kobject_put() & more
-
 	printk(KERN_INFO "%s: exit:\tunregistering the device number...\n", name);
 	unregister_chrdev_region(devno, 1);
 
@@ -166,6 +165,7 @@ ssize_t char_read(	struct file *filp,
 		count = sizeof(char_arr.array);
 	}
 	not_copied = copy_to_user(buf, char_arr.array, count);
+	printk(KERN_INFO "%s: read:\t%lu bytes not copied.", name, not_copied);
 
 	return count - not_copied;
 }
